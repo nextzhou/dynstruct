@@ -11,7 +11,7 @@ type definer struct {
 	err    error
 }
 
-func (d *definer) AddField(name string, t reflect.Type) *definer {
+func (d *definer) AddField(name string, template interface{}) *definer {
 	if d.err != nil {
 		return d
 	}
@@ -26,9 +26,16 @@ func (d *definer) AddField(name string, t reflect.Type) *definer {
 		return d
 	}
 
-	if t == nil {
+	if template == nil {
 		d.err = makeNilTypeError(name)
 		return d
+	}
+
+	var t reflect.Type
+	if tt, ok := template.(reflect.Type); ok {
+		t = tt
+	} else {
+		t = reflect.TypeOf(template)
 	}
 
 	field := makeField(name, t)

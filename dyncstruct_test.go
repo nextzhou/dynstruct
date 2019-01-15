@@ -113,30 +113,37 @@ func TestDefine(t *testing.T) {
 		})
 
 		Convey("reuse definer", func() {
-			definer := Define("Abc").AddField("Field1", reflect.TypeOf(""))
+			definer := Define("Abc").AddField("Field1", "")
 			_, err := definer.Finish()
 			So(err, ShouldBeNil)
 
-			_, err = definer.AddField("Field2", reflect.TypeOf("")).Finish()
+			definer = Define("Abc").AddField("Field1", reflect.TypeOf(""))
+			_, err = definer.Finish()
+			So(err, ShouldBeNil)
+
+			_, err = definer.AddField("Field2", "").Finish()
 			So(err, ShouldBeError, `call function "definer.Finish()" more than once`)
 		})
 
 		Convey("repeated field", func() {
 			_, err := Define("Abc").
-				AddField("field1", reflect.TypeOf("")).
-				AddField("field1", reflect.TypeOf("")).
+				AddField("field1", "").
+				AddField("field1", "").
 				Finish()
 			So(err, ShouldBeError, `repeated field name: "field1"`)
 
 			_, err = Define("Abc").
-				AddField("field1", reflect.TypeOf("")).
-				AddField("field1", reflect.TypeOf(0)).
+				AddField("field1", "").
+				AddField("field1", 0).
 				Finish()
 			So(err, ShouldBeError, `repeated field name: "field1"`)
 		})
 
 		Convey("nil field type", func() {
 			_, err := Define("Abc").AddField("field", nil).Finish()
+			So(err, ShouldBeError, `type of field "field" is nil`)
+
+			_, err = Define("Abc").AddField("field", reflect.TypeOf(nil)).Finish()
 			So(err, ShouldBeError, `type of field "field" is nil`)
 		})
 
