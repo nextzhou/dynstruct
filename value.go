@@ -71,5 +71,8 @@ func isMatchedType(t, vt reflect.Type) bool {
 	if t.Kind() == reflect.Ptr && vt == nil {
 		return true
 	}
+	if t.Kind() == reflect.Interface && vt.Implements(t) {
+		return true
+	}
 	return false
 }

@@ -1,7 +1,9 @@
 package dynstruct
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"reflect"
 	"testing"
 	"time"
@@ -237,6 +239,62 @@ func TestSetValue(t *testing.T) {
 		bigNumber := 123456
 		val.Set("int8", int8(bigNumber))
 		So(val.Get("int8"), ShouldEqual, int8(bigNumber))
+	})
+}
+
+func TestInterfaceField(t *testing.T) {
+	Convey("interface field", t, func() {
+		anyType := reflect.TypeOf((*interface{})(nil)).Elem()
+		writerType := reflect.TypeOf((*io.Writer)(nil)).Elem()
+		typ, err := Define("Abc").
+			AddField("Any", anyType).
+			AddField("Writer", writerType).
+			Finish()
+		So(err, ShouldBeNil)
+		val := typ.New()
+
+		Convey("empty interface", func() {
+			var i int
+			var s string
+			var f float64
+			var any interface{}
+
+			val.Set("Any", 123)
+			val.Scan("Any", &i)
+			So(i, ShouldEqual, 123)
+			val.Scan("Any", &any)
+			So(any, ShouldEqual, 123)
+			So(func() { val.Scan("Any", &s) }, ShouldPanic)
+
+			val.Set("Any", "haha")
+			val.Scan("Any", &s)
+			So(s, ShouldEqual, "haha")
+			val.Scan("Any", &any)
+			So(any, ShouldEqual, "haha")
+			So(func() { val.Scan("Any", &i) }, ShouldPanic)
+
+			val.Set("Any", 1.23)
+			val.Scan("Any", &f)
+			So(f, ShouldAlmostEqual, 1.23)
+			val.Scan("Any", &any)
+			So(any, ShouldAlmostEqual, 1.23)
+			So(func() { val.Scan("Any", &i) }, ShouldPanic)
+		})
+
+		Convey("non-empty interface", func() {
+			var w io.Writer
+			var b, bb *bytes.Buffer
+			b = bytes.NewBuffer(nil)
+
+			val.Set("Writer", b)
+			val.Scan("Writer", &bb)
+			So(bb, ShouldPointTo, b)
+			val.Scan("Writer", &w)
+			So(w, ShouldPointTo, b)
+			So(val.Get("Writer"), ShouldPointTo, b)
+
+			So(func() { val.Set("Writer", 0) }, ShouldPanic)
+		})
 	})
 }
 
